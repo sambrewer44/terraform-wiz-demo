@@ -1,0 +1,58 @@
+provider "google" {
+  credentials = file("your_json_key_file_path")
+  project     = "your_project_id"
+  region      = "your_region"
+}
+
+resource "google_container_cluster" "my_cluster" {
+  name     = "cluster_name"
+  location = "region_or_zone"  # You can either put a region or zone. If you choose region, it will create a regional cluster, if you choose zone, it'll be deployed to one zone only.
+
+  remove_default_node_pool = false
+
+  network    = "https://www.googleapis.com/compute/v1/projects/your_project_id/global/networks/your_vpc_network_name"
+  subnetwork = "https://www.googleapis.com/compute/v1/projects/your_project_id/regions/your_region/subnetworks/vpc_subnet_name"
+
+  node_pool {
+    name               = "your_cluster_pool_name"
+    initial_node_count = 1
+    version            = "1.27.3-gke.100"  # Specify a node version compatible with the master version
+
+    node_config {
+      disk_size_gb = 25  # increments in GBs
+    }
+  }
+
+  addons_config {
+    http_load_balancing {
+      disabled = false
+    }
+  }
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+	delete = "30m"
+  }
+}
+
+resource "google_compute_instance" "ubuntu_vm" {
+  name         = "ubuntu-vm"
+  machine_type = "e2-medium"
+  zone         = "your_zone"
+  tags         = ["ubuntu"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-1804-lts"
+    }
+  }
+
+  network_interface {
+    network = "default"
+    access_config {
+      // Ephemeral IP
+    }
+  }
+}
+
